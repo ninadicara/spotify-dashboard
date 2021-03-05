@@ -1,0 +1,289 @@
+---
+title: "Your Spotify Data"
+output: 
+  flexdashboard::flex_dashboard:
+    storyboard: true
+theme: spacelab
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+library(flexdashboard)
+library(dplyr)            # Data manipulation (the %>% symbol)
+library(tidyr)            # Data tidying (e.g. pivot_longer)
+library(ggplot2)          # Data plotting
+library(lubridate)        # Date time manipulation
+library(formattable)      # Cool tables
+library(plotly)           # Interactive graphs
+library(RColorBrewer)     # Nice colours
+library(forcats)          # Factor operations
+library(cowplot)          # ggplot2 extensions
+library(factoextra)       # Clustering plots
+library(scales)           # % in value box
+
+spotify <- read.csv(file = "track_features_edited.csv", fill = TRUE, header = TRUE)
+
+spotify <- spotify %>% mutate(datetime = dmy_hm(endTime),
+                              wday = as.factor(wday(datetime, label=TRUE)),
+                              hour = hour(datetime),
+                              date = as_date(datetime),
+                              month = as.factor(format(datetime, "%b")),
+                              year = year(datetime),
+                              yr_mnth = format(as.Date(datetime), "%Y-%m"))
+
+# Relevel the months
+spotify <- spotify %>%
+  mutate(wday = forcats::fct_relevel(wday, "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")) %>%
+  mutate(month = forcats::fct_relevel(month, "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
+                                       "Aug", "Sep", "Oct", "Nov", "Dec"))
+
+# Useful list of the numeric features in the dataset
+music_features <- c('danceability', 'energy', 'loudness', 'speechiness', 'acousticness', 'instrumentalness', 'liveness', 'valence')
+
+```
+
+
+Headlines {data-orientation=rows}
+=====================================  
+    
+Row
+-------------------------------------
+
+```{r descriptive, include=FALSE}
+date1 <- min(spotify$date)
+date2 <- max(spotify$date)
+unique_tracks <- length(unique(spotify[["trackID"]]))
+total_listens <- nrow(spotify)
+listening_time <- sum(spotify$msPlayed) / (1000 * 3600) # Thousandth of a second, *3600 for hours. 
+
+# Remove unknowns from now on as they bias the output. 
+spotify <- spotify %>% filter(artistName != "Unknown Artist" | trackName != "Unknown Track")
+
+repetition <- (1 - (unique_tracks/total_listens))
+```
+
+<!-- Between `r date1` and `r date2` you listened to  -->
+
+### Total Listens
+
+```{r}
+valueBox(total_listens, icon='fas fa-music')
+```
+
+### Hours of Music
+
+```{r}
+valueBox(round(listening_time), icon="fas fa-headphones")
+```
+
+### Unique Tracks Listened To
+
+```{r}
+valueBox(round(unique_tracks), icon="fa-compact-disc")
+```
+
+### Of Your Songs Were Repeat Listens
+
+```{r}
+valueBox(scales::percent(round(repetition, 2)), icon="fas fa-redo-alt")
+```
+
+<!-- Between `r date1` and `r date2` you listened to `r total_listens` tracks on Spotify, totalling `r round(listening_time)` hours! Out of all those listens, `r unique_tracks` tracks were unique, which means that `r round(repetition)`% of the things you listened to were things you had listened to before.  -->
+
+Row
+-------------------------------------
+
+### Your top song each month
+
+```{r tracks_by_month, echo=FALSE, warning=FALSE, message=FALSE}
+tracks_by_month <- spotify %>% 
+  select('yr_mnth', 'artistName','trackName') %>%  
+  count(yr_mnth, artistName, trackName) %>%  # Count how many occurrences there are of each artist
+  ungroup() %>%
+  group_by(yr_mnth) %>% 
+  top_n(1, n)
+
+as.htmlwidget(formattable(tracks_by_month,
+                          align = c("l", "l", "l", "r"),
+                          list(
+                            n = color_bar("#FC8D62")
+                            ),
+                          col.names = c("Month-Year", "Artist", "Track", "Times Played")
+                          ), width = 800)
+```
+
+Row
+-------------------------------------
+
+### Your Top 10 Artists
+
+Your top 10 artists overall were:
+```{r artist_freqs, echo=FALSE, warning=FALSE, message=FALSE}
+artist_freqs <- spotify %>% 
+  select('artistName') %>%  # Select the artist name column
+  count(artistName) %>%  # Count how many occurrences there are of each artist
+  arrange(desc(n)) # Arrange them in descending order
+
+# Lets print the top 10...
+as.htmlwidget(formattable(artist_freqs[0:10,], 
+                          align = c("l", "r"),
+                          list(
+                            n = color_bar("lightgreen")
+                            ),
+                          col.names = c("Artist", "Times Played")
+                          ), width = 350)
+```
+
+
+Over Time {data-orientation=rows}
+=====================================   
+
+Row 
+-------------------------------------
+
+### How did your music change over time?
+
+```{r song_features_data, include=FALSE}
+# Select these features and drop na values
+spotify_features <- spotify %>% 
+  select(all_of(music_features), 'date') %>% 
+  drop_na()
+
+# Scale all varbs so min is 0 and max is 1
+range0to1 <- function(x){(x-min(x))/(max(x)-min(x))}
+spotify_features[, music_features] <- sapply(spotify_features[, music_features], range0to1)
+
+# Transform to long for plotting
+long_music_feats <- spotify_features %>%
+  pivot_longer(cols=all_of(music_features), names_to="feature", values_to="value")
+
+```
+
+<!-- Spotify has lots of information about the features of the songs that you have listened to. Here we've plotted each of the numeric features on a graph to show how they have changed over time. You can interact with this graph by hovering over the lines or zooming in. Double-click to set it back to the default.  -->
+
+```{r song_features_plot, echo=FALSE, warning=FALSE, message=FALSE}
+
+#Set Up the ggplot
+gg <- ggplot(data=long_music_feats, 
+             aes(x=date, 
+                 y=value, 
+                 color=feature,
+                 group = feature)) + 
+  geom_smooth(se=FALSE) +
+  theme_minimal_hgrid(12) +
+  scale_colour_brewer(palette="Set2") + 
+  xlab("") + 
+  ylab("Feature Value") + 
+  labs(title = "Music features over time",
+       colour = "") + 
+  theme(legend.position="bottom")
+
+fig <- ggplotly(gg)
+
+text_x <- paste("Date: ", lubridate::as_date(fig$x$data[[2]]$x))
+
+
+fig %>%
+    style(text = c(text_x, "feature"))
+```
+
+Row
+-------------------------------------
+
+<!-- ### When did you listen to the most music? -->
+
+<!-- You see how many hours of music you listened to over time, for example by the month of the year, or by the day of the week.  -->
+
+### Listening Hours By Month
+
+```{r hours_by_month, echo=FALSE, warning=FALSE, message=FALSE}
+
+hours_by_month <- spotify %>% select(msPlayed, month) %>%
+  group_by(month) %>%
+  summarise(msPlayed = sum(msPlayed)) %>%
+  mutate(hoursPlayed = msPlayed / (1000 * 3600) )
+
+hours_by_month_plt <- ggplot(hours_by_month, aes(x=month, y=hoursPlayed)) +
+  geom_bar(stat="identity", fill = "#66C2A5") +
+  theme_minimal_hgrid(12) +
+  xlab("") + 
+  ylab("Hours of Listening Time") + 
+  labs(title = "Total listening hours by month") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5))
+
+ggplotly(hours_by_month_plt)
+```
+
+### Listening Hours By Weekday
+
+```{r hours_by_weekday, echo=FALSE, warning=FALSE, message=FALSE}
+
+hours_by_wday <- spotify %>% select(msPlayed, wday) %>%
+  group_by(wday) %>%
+  summarise(msPlayed = sum(msPlayed)) %>%
+  mutate(hoursPlayed = msPlayed / (1000 * 3600) )
+
+hours_by_wday_plt <- ggplot(hours_by_wday, aes(x=wday, y=hoursPlayed)) +
+  geom_bar(stat="identity", fill="#FFD92F") +
+  xlab("") + 
+  ylab("Hours of Listening Time") + 
+  labs(title = "Total listening hours by weekday") + 
+  theme_minimal_hgrid(12) + 
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5))
+
+ggplotly(hours_by_wday_plt)
+
+```
+
+Over Space
+=====================================  
+
+### How do your songs group together?
+
+Below is the result of using statistical analysis to map all your songs on a 2-dimensional graph. If you are interested in the details of how this works then you can [read the details here]().
+So, what is it? First, the analysis groups together songs that are similar based on the features of the song like those in the plot above, such as *acousticness* or *valence* (this uses a clustering algorithm called 'k-means'). The analysis then reduces all the information about the song that it can to two variables, so that they can be plotted on a 2d graph (this is known as 'dimension reduction'). The result is the graph below, where each of your songs has been assigned to a group, given by the colour, and put somewhere on the graph. 
+
+You can see what each of the points on the graph is by hovering over it to get the track and artist name.
+
+```{r k_means_clustering, echo=FALSE, warning=FALSE, message=FALSE}
+
+# Create a subset with numeric features and the names we eventually want as tooltips as the index.
+spotify_num <- spotify %>% 
+  select(trackName, artistName, all_of(music_features)) %>%
+  mutate(name = sprintf("Track: %s<br>Artist: %s", trackName, artistName)) %>%
+  distinct() %>%
+  drop_na() %>%
+  select(-c(trackName, artistName))
+
+# Make the trackID the index 
+rownames(spotify_num) <- spotify_num$name
+spotify_num$name <- NULL # Delete trackID as a column, it's the index now. 
+
+# Now scale   
+spotify_num <- spotify_num %>% 
+  scale()
+
+# Run the kmeans algorithm
+km <- kmeans(spotify_num, 3, nstart = 25)
+
+# Dimension reduction using PCA
+res.pca <- prcomp(spotify_num,  scale = TRUE)
+# Coordinates of individuals
+ind.coord <- as.data.frame(get_pca_ind(res.pca)$coord)
+# Add clusters obtained using the K-means algorithm
+ind.coord$cluster <- factor(km$cluster)
+
+cluster_plot <- ggplot(ind.coord, 
+                       aes(x = Dim.1, 
+                           y = Dim.2, 
+                           text = row.names(spotify_num), 
+                           color=cluster)) +
+                geom_point() + 
+                theme_void() +  # Remove all axes and labels
+                theme(legend.position = "none") +
+                scale_colour_brewer(palette="Set2")
+
+                
+ggplotly(cluster_plot, tooltip = "text")
+
+```
+

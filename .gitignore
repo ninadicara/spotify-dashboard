@@ -1,0 +1,7 @@
+*.Rproj
+.Rproj.user/
+*.csv
+*.tsv
+.DS_Store
+.Rhistory
+.vscode
