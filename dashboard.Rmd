@@ -1,10 +1,27 @@
 ---
-title: "Your Spotify Data"
+title: "Your Spotify Data from the Mood Music Study"
 output: 
   flexdashboard::flex_dashboard:
-    storyboard: true
+    source_code: embed
+
 theme: spacelab
 ---
+
+<style>                     
+.navbar {
+  background-color:grey;
+  border-color:grey;
+}
+.navbar a:hover {
+  background-color: darkgrey!important;
+}
+.navbar li.active a {
+  background-color: darkgrey!important;
+}
+.navbar-brand {
+color:white!important;
+}
+</style>  
 
 ```{r setup, include=FALSE, echo=FALSE}
 library(flexdashboard)
@@ -66,25 +83,25 @@ repetition <- (1 - (unique_tracks/total_listens))
 ### Total Listens
 
 ```{r}
-valueBox(total_listens, icon='fas fa-music')
+valueBox(total_listens, icon='fas fa-music', color="#66C2A5")
 ```
 
-### Hours of Music
+### Hours of Music Listened To
 
 ```{r}
-valueBox(round(listening_time), icon="fas fa-headphones")
+valueBox(round(listening_time), icon="fas fa-headphones", color="#FC8D62")
 ```
 
 ### Unique Tracks Listened To
 
 ```{r}
-valueBox(round(unique_tracks), icon="fa-compact-disc")
+valueBox(round(unique_tracks), icon="fa-compact-disc", color="#8DA0CB")
 ```
 
 ### Of Your Songs Were Repeat Listens
 
 ```{r}
-valueBox(scales::percent(round(repetition, 2)), icon="fas fa-redo-alt")
+valueBox(scales::percent(round(repetition, 2)), icon="fas fa-redo-alt", color="#E78AC3")
 ```
 
 <!-- Between `r date1` and `r date2` you listened to `r total_listens` tracks on Spotify, totalling `r round(listening_time)` hours! Out of all those listens, `r unique_tracks` tracks were unique, which means that `r round(repetition)`% of the things you listened to were things you had listened to before.  -->
@@ -93,7 +110,7 @@ valueBox(scales::percent(round(repetition, 2)), icon="fas fa-redo-alt")
 Row
 -------------------------------------
 
-### Your Top 10 Artists
+### Your Top 10 Artists {.no-title}
 
 Your top 10 artists overall were:
 ```{r artist_freqs, echo=FALSE, warning=FALSE, message=FALSE}
@@ -106,7 +123,7 @@ artist_freqs <- spotify %>%
 as.htmlwidget(formattable(artist_freqs[0:10,], 
                           align = c("l", "r"),
                           list(
-                            n = color_bar("lightgreen")
+                            n = color_bar("#FFD92F")
                             ),
                           col.names = c("Artist", "Times Played")
                           ), width = 350)
@@ -117,7 +134,9 @@ Row
 -------------------------------------
 
 
-### Your top song each month
+### Your top song each month {.no-title}
+
+These were your top songs each month:
 
 ```{r tracks_by_month, echo=FALSE, warning=FALSE, message=FALSE}
 tracks_by_month <- spotify %>% 
@@ -143,7 +162,7 @@ Over Time {data-orientation=rows}
 Row 
 -------------------------------------
 
-### How did your music change over time?
+### How did your music change over time? {.no-title}
 
 ```{r song_features_data, include=FALSE}
 # Select these features and drop na values
@@ -196,7 +215,7 @@ Row
 
 <!-- You see how many hours of music you listened to over time, for example by the month of the year, or by the day of the week.  -->
 
-### Listening Hours By Month
+### Listening Hours By Month {.no-title}
 
 ```{r hours_by_month, echo=FALSE, warning=FALSE, message=FALSE}
 
@@ -216,7 +235,7 @@ hours_by_month_plt <- ggplot(hours_by_month, aes(x=month, y=hoursPlayed)) +
 ggplotly(hours_by_month_plt)
 ```
 
-### Listening Hours By Weekday
+### Listening Hours By Weekday {.no-title}
 
 ```{r hours_by_weekday, echo=FALSE, warning=FALSE, message=FALSE}
 
@@ -240,12 +259,14 @@ ggplotly(hours_by_wday_plt)
 Over Space
 =====================================  
 
-### How do your songs group together?
+### How do your songs group together? {.no-title}
 
-Below is the result of using statistical analysis to map all your songs on a 2-dimensional graph. If you are interested in the details of how this works then you can [read the details here]().
-So, what is it? First, the analysis groups together songs that are similar based on the features of the song like those in the plot above, such as *acousticness* or *valence* (this uses a clustering algorithm called 'k-means'). The analysis then reduces all the information about the song that it can to two variables, so that they can be plotted on a 2d graph (this is known as 'dimension reduction'). The result is the graph below, where each of your songs has been assigned to a group, given by the colour, and put somewhere on the graph. 
+Below are all your songs mapped onto a graph. <br>
+ 
+How does it work? First, the analysis groups together songs that are similar based on the features of the song like those in the previous plot, such as *acousticness* or *valence* (this uses a clustering algorithm called 'k-means'). The analysis then reduces all the information about the song that it can to two variables, so that they can be plotted on a 2-d graph (this is known as 'dimension reduction'). The result is the graph below, where each of your songs has been assigned to a group, given by the colour, and put somewhere on the graph. 
 
-You can see what each of the points on the graph is by hovering over it to get the track and artist name.
+<br>
+You can see what each of the points on the graph is by hovering over it to get the track and artist name. Double-click on the graph to go back to the default view.
 
 ```{r k_means_clustering, echo=FALSE, warning=FALSE, message=FALSE}
 
