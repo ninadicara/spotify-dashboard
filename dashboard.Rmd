@@ -42,7 +42,7 @@ music_features <- c('danceability', 'energy', 'loudness', 'speechiness', 'acoust
 ```
 
 
-Headlines {data-orientation=rows}
+Headlines  {data-orientation=rows}
 =====================================  
     
 Row
@@ -89,27 +89,6 @@ valueBox(scales::percent(round(repetition, 2)), icon="fas fa-redo-alt")
 
 <!-- Between `r date1` and `r date2` you listened to `r total_listens` tracks on Spotify, totalling `r round(listening_time)` hours! Out of all those listens, `r unique_tracks` tracks were unique, which means that `r round(repetition)`% of the things you listened to were things you had listened to before.  -->
 
-Row
--------------------------------------
-
-### Your top song each month
-
-```{r tracks_by_month, echo=FALSE, warning=FALSE, message=FALSE}
-tracks_by_month <- spotify %>% 
-  select('yr_mnth', 'artistName','trackName') %>%  
-  count(yr_mnth, artistName, trackName) %>%  # Count how many occurrences there are of each artist
-  ungroup() %>%
-  group_by(yr_mnth) %>% 
-  top_n(1, n)
-
-as.htmlwidget(formattable(tracks_by_month,
-                          align = c("l", "l", "l", "r"),
-                          list(
-                            n = color_bar("#FC8D62")
-                            ),
-                          col.names = c("Month-Year", "Artist", "Track", "Times Played")
-                          ), width = 800)
-```
 
 Row
 -------------------------------------
@@ -131,6 +110,30 @@ as.htmlwidget(formattable(artist_freqs[0:10,],
                             ),
                           col.names = c("Artist", "Times Played")
                           ), width = 350)
+```
+
+
+Row
+-------------------------------------
+
+
+### Your top song each month
+
+```{r tracks_by_month, echo=FALSE, warning=FALSE, message=FALSE}
+tracks_by_month <- spotify %>% 
+  select('yr_mnth', 'artistName','trackName') %>%  
+  count(yr_mnth, artistName, trackName) %>%  # Count how many occurrences there are of each artist
+  ungroup() %>%
+  group_by(yr_mnth) %>% 
+  top_n(1, n)
+
+as.htmlwidget(formattable(tracks_by_month,
+                          align = c("l", "l", "l", "r"),
+                          list(
+                            n = color_bar("#FC8D62")
+                            ),
+                          col.names = c("Month-Year", "Artist", "Track", "Times Played")
+                          ), width = 800)
 ```
 
 
