@@ -7,29 +7,25 @@ params:
 theme: spacelab
 ---
 
-<style>
-
-</style>
-
 <style>                     
 .navbar {
   background-color:grey;
   border-color:grey;
 }
-.navbar a:hover {
-  background-color: darkgrey!important;
+.navbar a:hover, .navbar a:focus {
+  background-color: darkgrey !important;
 }
 .navbar li.active a {
-  background-color: darkgrey!important;
+  background-color: darkgrey !important;
 }
 .navbar-brand {
   color:white!important;
 }
-.navbar-inverse navbar-toggle:focus {
-  color:grey!important;
+.navbar-inverse .navbar-toggle:hover, .navbar-inverse .navbar-toggle:focus {
+  background-color: darkgrey !important;
 }
-.navbar-toggle:hover {
-  color:darkgrey!important;
+.navbar-inverse .navbar-collapse, .navbar-inverse .navbar-form {
+    border-color: transparent;
 }
 
 </style>  
