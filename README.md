@@ -1,9 +1,11 @@
 # Spotify Dashboard
 
+Create a useful dashboard overview of Spotify data obtained from the Spotify API. This is designed to work with the data exported from the [Spotify Rehydrator](https://github.com/DynamicGenetics/Spotify-Rehydrator). It is also designed to work with multiple different data files, in order to create a dashboard for multiple users.
+Because of this, the `.Rmd` file takes a filepath to the data as a parameter, and the `.R` script can be used to iterate through data files in a repository. 
+
 The `.Rmd` file will generate a `.html` multi-page dashboard describing an individual's Spotify data. It is built using R Markdown, [Plotly](https://plotly.com/) and [flexdashboard](https://rmarkdown.rstudio.com/flexdashboard/index.html). 
 
-This dashboard will accept a `.csv` where each row contains a listening event in an individuals Spotify listening history. 
-It is designed to work with the data exported from the [Spotify Rehydrator](https://github.com/DynamicGenetics/Spotify-Rehydrator).
+This dashboard will accept a `.tsv` where each row contains a listening event in an individuals Spotify listening history. This is easy to change though in the first markdown block of the template `.Rmd` file.
 
 ## Graphs and Summaries included  
 * Number of listening events in the data  
